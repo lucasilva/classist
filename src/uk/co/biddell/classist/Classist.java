@@ -64,6 +64,7 @@ import javax.swing.event.ListSelectionListener;
 final class Classist extends JFrame implements ListSelectionListener, ActionListener, DocumentListener {
 
     private static final long serialVersionUID = -5829213504411524998L;
+    private static final String PREFS_LAST_SEARCH_DIRECTORY = "LastSearchDirectory";
     private final HashMap<String, ArrayList<String>> classes = new HashMap<String, ArrayList<String>>();
     private final DefaultListModel classListModel = new DefaultListModel();
     private final JList classList = new JList(classListModel);
@@ -75,13 +76,17 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
     private final JCheckBox duplicatesCheck = new JCheckBox("Show duplicate classes");
     private final JLabel resultsLabel = new JLabel();
     private final Preferences prefs = Preferences.userNodeForPackage(Classist.class);
-    private static final String PREFS_LAST_SEARCH_DIRECTORY = "LastSearchDirectory";
     private final ProgressMonitor pm = new ProgressMonitor(this, "Loading classes....");
-    private FileFilter filter = new FileFilter() {
+    private final FileFilter filter = new FileFilter() {
 
         public final boolean accept(final File pathname) {
-            if (pathname.isDirectory() || pathname.getName().toLowerCase().endsWith(".jar")) {
+            if (pathname.isDirectory()) {
                 return true;
+            } else {
+                final String name = pathname.getName().toLowerCase();
+                if (name.endsWith(".jar") || name.endsWith(".zip") || name.endsWith(".ear") || name.endsWith(".war") || name.endsWith(".sar") || name.endsWith(".rar") || name.endsWith(".par")) {
+                    return true;
+                }
             }
             return false;
         }
