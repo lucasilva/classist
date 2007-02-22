@@ -10,7 +10,7 @@
 
 	<target name="build">
 		<mkdir dir="bin" />
-		<javac destdir="bin" srcdir="src" />
+		<javac destdir="bin" srcdir="src" debug="true" debuglevel="vars,src,lines" target="1.5"/>
 		<jar basedir="bin" destfile="${classist.jar}">
 			<manifest>
 				<attribute name="Main-Class" value="uk.co.biddell.classist.Classist" />
