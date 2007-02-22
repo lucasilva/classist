@@ -15,10 +15,12 @@
 //
 package uk.co.biddell.classist;
 
+import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -26,6 +28,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -34,12 +37,15 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
@@ -70,6 +76,7 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
     private final JLabel resultsLabel = new JLabel();
     private final Preferences prefs = Preferences.userNodeForPackage(Classist.class);
     private static final String PREFS_LAST_SEARCH_DIRECTORY = "LastSearchDirectory";
+    private final ProgressMonitor pm = new ProgressMonitor(this, "Loading classes....");
     private FileFilter filter = new FileFilter() {
 
         public final boolean accept(final File pathname) {
@@ -152,7 +159,9 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
         updateResults();
     }
 
-    private final void walkFilesystem(final File directory) throws Exception {
+    private final void walkFilesystem(final File directory) throws IOException, InterruptedException {
+        // Check if we have been interrupted
+        Thread.sleep(0);
         final File[] files = directory.listFiles(filter);
         for (final File f : files) {
             if (f.isDirectory()) {
@@ -238,9 +247,7 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
                 @Override
                 public final void run() {
                     try {
-                        // TODO - use a proper glass pane or monitor here to disable input
                         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                        loadButton.setEnabled(false);
                         classes.clear();
                         walkFilesystem(new File(pathField.getText()));
                         EventQueue.invokeLater(new Runnable() {
@@ -249,15 +256,20 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
                                 displayClassMatches();
                             }
                         });
-                    } catch (Exception e) {
+                    } catch (final InterruptedException ie) {
+                        classes.clear();
+                    } catch (final IOException e) {
                         throw new RuntimeException(e);
                     } finally {
                         Classist.this.setCursor(Cursor.getDefaultCursor());
-                        loadButton.setEnabled(true);
+                        pm.setVisible(false);
                     }
                 }
             };
             t.start();
+            pm.setLocationRelativeTo(this);
+            pm.setThread(t);
+            pm.setVisible(true);
         } else if (e.getSource() == duplicatesCheck) {
             if (duplicatesCheck.isSelected()) {
                 displayDuplicateClasses();
@@ -304,6 +316,50 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
         } else {
             duplicatesCheck.setEnabled(false);
             searchField.setEnabled(false);
+        }
+    }
+
+    private final class ProgressMonitor extends JDialog {
+
+        private static final long serialVersionUID = 6420009097662336539L;
+        private final JProgressBar progressBar = new JProgressBar();
+        private final JButton cancelButton = new JButton("Cancel");
+        private final JLabel label = new JLabel();
+        private Thread thread;
+
+        private ProgressMonitor(final Frame parent, final String title) {
+            super(parent);
+            setModal(true);
+            setTitle(title);
+            setResizable(false);
+            setUndecorated(true);
+            getRootPane().setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            setLayout(new GridBagLayout());
+            final GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(4, 4, 4, 4);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            add(label, gbc);
+            gbc.gridy++;
+            add(progressBar, gbc);
+            gbc.gridy++;
+            gbc.fill = GridBagConstraints.NONE;
+            gbc.anchor = GridBagConstraints.EAST;
+            add(cancelButton, gbc);
+            label.setText(title);
+            progressBar.setIndeterminate(true);
+            cancelButton.addActionListener(new ActionListener() {
+
+                public final void actionPerformed(final ActionEvent e) {
+                    thread.interrupt();
+                }
+            });
+            pack();
+        }
+
+        private final void setThread(final Thread t) {
+            this.thread = t;
         }
     }
 
