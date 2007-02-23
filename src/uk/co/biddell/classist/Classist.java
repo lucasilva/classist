@@ -174,18 +174,22 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
             } else {
                 final String fileName = f.getAbsolutePath();
                 final JarFile jar = new JarFile(fileName);
-                final Enumeration<JarEntry> e = jar.entries();
-                while (e.hasMoreElements()) {
-                    String className = e.nextElement().getName();
-                    if (className.endsWith(".class")) {
-                        className = className.replace('/', '.').replace(".class", "");
-                        ArrayList<String> jarsContainingClass = classes.get(className);
-                        if (jarsContainingClass == null) {
-                            jarsContainingClass = new ArrayList<String>();
-                            classes.put(className, jarsContainingClass);
+                try {
+                    final Enumeration<JarEntry> e = jar.entries();
+                    while (e.hasMoreElements()) {
+                        String className = e.nextElement().getName();
+                        if (className.endsWith(".class")) {
+                            className = className.replace('/', '.').replace(".class", "");
+                            ArrayList<String> jarsContainingClass = classes.get(className);
+                            if (jarsContainingClass == null) {
+                                jarsContainingClass = new ArrayList<String>();
+                                classes.put(className, jarsContainingClass);
+                            }
+                            jarsContainingClass.add(fileName);
                         }
-                        jarsContainingClass.add(fileName);
                     }
+                } finally {
+                    jar.close();
                 }
             }
         }
