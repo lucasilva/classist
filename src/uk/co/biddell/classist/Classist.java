@@ -302,22 +302,20 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
                 @Override
                 public final void run() {
                     try {
-                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                         classes.clear();
                         walkFilesystem(new File(pathField.getText()));
-                        EventQueue.invokeAndWait(new Runnable() {
-
-                            public final void run() {
-                                displayClassMatches();
-                            }
-                        });
                     } catch (final InterruptedException ie) {
                         classes.clear();
                     } catch (final Exception e) {
                         throw new RuntimeException(e);
                     } finally {
-                        Classist.this.setCursor(Cursor.getDefaultCursor());
-                        pm.setVisible(false);
+                        EventQueue.invokeLater(new Runnable() {
+
+                            public final void run() {
+                                displayClassMatches();
+                                pm.setVisible(false);
+                            }
+                        });
                     }
                 }
             });
@@ -376,9 +374,18 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
 
         public final void monitor(final Thread t) {
             this.thread = t;
+            setLocationRelativeTo(getParent());
             t.start();
-            setLocationRelativeTo(Classist.this);
             setVisible(true);
+        }
+
+        public final void setVisible(final boolean visible) {
+            if (visible) {
+                getParent().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            } else {
+                getParent().setCursor(Cursor.getDefaultCursor());
+            }
+            super.setVisible(visible);
         }
 
         private final class CancelAction extends AbstractAction {
