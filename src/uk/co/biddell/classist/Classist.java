@@ -145,8 +145,7 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         jarList.setVisibleRowCount(5);
         pathField.getDocument().addDocumentListener(this);
         getRootPane().setDefaultButton(loadButton);
-        final Dimension d = new Dimension(640, 480);
-        setPreferredSize(d);
+        setPreferredSize(new Dimension(640, 480));
         pack();
         if (initialDirectory != null && initialDirectory.length() > 0) {
             pathField.setText(initialDirectory);
@@ -249,6 +248,46 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         }
     }
 
+    public final void insertUpdate(final DocumentEvent e) {
+        handleDocumentEvent(e);
+    }
+
+    public final void removeUpdate(final DocumentEvent e) {
+        handleDocumentEvent(e);
+    }
+
+    public final void changedUpdate(final DocumentEvent e) {
+        handleDocumentEvent(e);
+    }
+
+    private final void handleDocumentEvent(final DocumentEvent e) {
+        if (e.getDocument() == searchField.getDocument()) {
+            EventQueue.invokeLater(new Runnable() {
+
+                public void run() {
+                    displayClassMatches();
+                }
+            });
+        } else if (e.getDocument() == pathField.getDocument()) {
+            enableControls();
+        }
+    }
+
+    private final void updateResults() {
+        resultsLabel.setText("Results (" + classListModel.getSize() + ")");
+    }
+
+    private final void enableControls() {
+        loadButton.setEnabled(pathField.getDocument().getLength() > 0 && new File(pathField.getText()).exists());
+        if (classes.size() > 0) {
+            duplicatesCheck.setEnabled(true);
+            searchField.setEnabled(!duplicatesCheck.isSelected());
+        } else {
+            duplicatesCheck.setEnabled(false);
+            searchField.setEnabled(false);
+        }
+    }
+
     private final class SearchAction extends AbstractAction {
 
         private static final long serialVersionUID = -2957345645844025493L;
@@ -300,46 +339,6 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
             } else {
                 displayClassMatches();
             }
-        }
-    }
-
-    public final void insertUpdate(final DocumentEvent e) {
-        handleDocumentEvent(e);
-    }
-
-    public final void removeUpdate(final DocumentEvent e) {
-        handleDocumentEvent(e);
-    }
-
-    public final void changedUpdate(final DocumentEvent e) {
-        handleDocumentEvent(e);
-    }
-
-    private final void handleDocumentEvent(final DocumentEvent e) {
-        if (e.getDocument() == searchField.getDocument()) {
-            EventQueue.invokeLater(new Runnable() {
-
-                public void run() {
-                    displayClassMatches();
-                }
-            });
-        } else if (e.getDocument() == pathField.getDocument()) {
-            enableControls();
-        }
-    }
-
-    private final void updateResults() {
-        resultsLabel.setText("Results (" + classListModel.getSize() + ")");
-    }
-
-    private final void enableControls() {
-        loadButton.setEnabled(pathField.getDocument().getLength() > 0 && new File(pathField.getText()).exists());
-        if (classes.size() > 0) {
-            duplicatesCheck.setEnabled(true);
-            searchField.setEnabled(!duplicatesCheck.isSelected());
-        } else {
-            duplicatesCheck.setEnabled(false);
-            searchField.setEnabled(false);
         }
     }
 
