@@ -307,6 +307,7 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
                     } catch (final InterruptedException ie) {
                         classes.clear();
                     } catch (final Exception e) {
+                        classes.clear();
                         throw new RuntimeException(e);
                     } finally {
                         EventQueue.invokeLater(new Runnable() {
