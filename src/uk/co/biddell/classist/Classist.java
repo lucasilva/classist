@@ -25,7 +25,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -346,7 +345,7 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
 
         private static final long serialVersionUID = 6420009097662336539L;
         private final JProgressBar progressBar = new JProgressBar();
-        private final JButton cancelButton = new JButton("Cancel");
+        private final JButton cancelButton = new JButton(new CancelAction());
         private final JLabel label = new JLabel();
         private Thread thread;
 
@@ -372,12 +371,6 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
             add(cancelButton, gbc);
             label.setText(title);
             progressBar.setIndeterminate(true);
-            cancelButton.addActionListener(new ActionListener() {
-
-                public final void actionPerformed(final ActionEvent e) {
-                    thread.interrupt();
-                }
-            });
             pack();
         }
 
@@ -386,6 +379,19 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
             t.start();
             setLocationRelativeTo(Classist.this);
             setVisible(true);
+        }
+
+        private final class CancelAction extends AbstractAction {
+
+            private static final long serialVersionUID = 1L;
+
+            public CancelAction() {
+                super("Cancel");
+            }
+
+            public final void actionPerformed(final ActionEvent e) {
+                thread.interrupt();
+            }
         }
     }
 
