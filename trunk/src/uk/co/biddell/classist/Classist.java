@@ -37,6 +37,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -50,6 +51,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -61,7 +63,7 @@ import javax.swing.event.ListSelectionListener;
  * 
  * @author luke.biddell@gmail.com
  */
-final class Classist extends JFrame implements ListSelectionListener, ActionListener, DocumentListener {
+final class Classist extends JFrame implements ListSelectionListener, DocumentListener {
 
     private static final long serialVersionUID = -5829213504411524998L;
     private static final String PREFS_LAST_SEARCH_DIRECTORY = "LastSearchDirectory";
@@ -72,8 +74,8 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
     private final JList jarList = new JList(jarListModel);
     private final JTextField searchField = new JTextField();
     private final JTextField pathField = new JTextField();
-    private final JButton loadButton = new JButton("Load classes");
-    private final JCheckBox duplicatesCheck = new JCheckBox("Show duplicate classes");
+    private final JButton loadButton = new JButton(new SearchAction());
+    private final JCheckBox duplicatesCheck = new JCheckBox(new DuplicatesAction());
     private final JLabel resultsLabel = new JLabel();
     private final Preferences prefs = Preferences.userNodeForPackage(Classist.class);
     private final ProgressMonitor pm = new ProgressMonitor(this, "Loading classes....");
@@ -84,7 +86,8 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
                 return true;
             } else {
                 final String name = pathname.getName().toLowerCase();
-                if (name.endsWith(".jar") || name.endsWith(".zip") || name.endsWith(".ear") || name.endsWith(".war") || name.endsWith(".sar") || name.endsWith(".rar") || name.endsWith(".par")) {
+                if (name.endsWith(".jar") || /* name.endsWith(".zip") || */name.endsWith(".ear") || name.endsWith(".war") || name.endsWith(".sar") || name.endsWith(".rar")
+                        || name.endsWith(".par")) {
                     return true;
                 }
             }
@@ -141,9 +144,7 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
         classList.getSelectionModel().addListSelectionListener(this);
         jarList.setVisibleRowCount(5);
         pathField.getDocument().addDocumentListener(this);
-        loadButton.addActionListener(this);
         getRootPane().setDefaultButton(loadButton);
-        duplicatesCheck.addActionListener(this);
         final Dimension d = new Dimension(640, 480);
         setPreferredSize(d);
         pack();
@@ -248,10 +249,17 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
         }
     }
 
-    public final void actionPerformed(final ActionEvent e) {
-        if (e.getSource() == loadButton) {
+    private final class SearchAction extends AbstractAction {
+
+        private static final long serialVersionUID = -2957345645844025493L;
+
+        public SearchAction() {
+            super("Load classes");
+        }
+
+        public final void actionPerformed(final ActionEvent e) {
             prefs.put(PREFS_LAST_SEARCH_DIRECTORY, pathField.getText());
-            final Thread t = new Thread() {
+            pm.monitor(new Thread() {
 
                 @Override
                 public final void run() {
@@ -259,7 +267,7 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
                         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                         classes.clear();
                         walkFilesystem(new File(pathField.getText()));
-                        EventQueue.invokeLater(new Runnable() {
+                        EventQueue.invokeAndWait(new Runnable() {
 
                             public final void run() {
                                 displayClassMatches();
@@ -267,19 +275,26 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
                         });
                     } catch (final InterruptedException ie) {
                         classes.clear();
-                    } catch (final IOException e) {
+                    } catch (final Exception e) {
                         throw new RuntimeException(e);
                     } finally {
                         Classist.this.setCursor(Cursor.getDefaultCursor());
                         pm.setVisible(false);
                     }
                 }
-            };
-            t.start();
-            pm.setLocationRelativeTo(this);
-            pm.setThread(t);
-            pm.setVisible(true);
-        } else if (e.getSource() == duplicatesCheck) {
+            });
+        }
+    }
+
+    private final class DuplicatesAction extends AbstractAction {
+
+        private static final long serialVersionUID = -526302916502802938L;
+
+        public DuplicatesAction() {
+            super("Show duplicate classes");
+        }
+
+        public final void actionPerformed(final ActionEvent e) {
             if (duplicatesCheck.isSelected()) {
                 displayDuplicateClasses();
             } else {
@@ -367,12 +382,16 @@ final class Classist extends JFrame implements ListSelectionListener, ActionList
             pack();
         }
 
-        private final void setThread(final Thread t) {
+        public final void monitor(final Thread t) {
             this.thread = t;
+            t.start();
+            setLocationRelativeTo(Classist.this);
+            setVisible(true);
         }
     }
 
     public static void main(final String[] args) throws Exception {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         final Classist c = new Classist(args.length > 0 ? args[0] : null);
         c.setVisible(true);
     }
