@@ -73,8 +73,8 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
     private final JList jarList = new JList(jarListModel);
     private final JTextField searchField = new JTextField();
     private final JTextField pathField = new JTextField();
-    private final JButton loadButton = new JButton(new SearchAction());
-    private final JCheckBox duplicatesCheck = new JCheckBox(new DuplicatesAction());
+    private final JButton loadButton = new JButton(new LoadClassesAction());
+    private final JCheckBox duplicatesCheck = new JCheckBox(new ShowDuplicatesAction());
     private final JLabel resultsLabel = new JLabel();
     private final Preferences prefs = Preferences.userNodeForPackage(Classist.class);
     private final ProgressMonitor pm = new ProgressMonitor(this, "Loading classes....");
@@ -287,11 +287,11 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         }
     }
 
-    private final class SearchAction extends AbstractAction {
+    private final class LoadClassesAction extends AbstractAction {
 
         private static final long serialVersionUID = -2957345645844025493L;
 
-        public SearchAction() {
+        public LoadClassesAction() {
             super("Load classes");
         }
 
@@ -323,11 +323,11 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         }
     }
 
-    private final class DuplicatesAction extends AbstractAction {
+    private final class ShowDuplicatesAction extends AbstractAction {
 
         private static final long serialVersionUID = -526302916502802938L;
 
-        public DuplicatesAction() {
+        public ShowDuplicatesAction() {
             super("Show duplicate classes");
         }
 
@@ -380,6 +380,7 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
             setVisible(true);
         }
 
+        @Override
         public final void setVisible(final boolean visible) {
             if (visible) {
                 getParent().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
