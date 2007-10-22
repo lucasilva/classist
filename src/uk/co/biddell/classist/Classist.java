@@ -36,12 +36,14 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
+
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -62,7 +64,7 @@ import javax.swing.event.ListSelectionListener;
  * 
  * @author luke.biddell@gmail.com
  */
-final class Classist extends JFrame implements ListSelectionListener, DocumentListener {
+final class Classist extends JFrame implements ListSelectionListener, DocumentListener, Runnable {
 
     private static final long serialVersionUID = -5829213504411524998L;
     private static final String PREFS_LAST_SEARCH_DIRECTORY = "LastSearchDirectory";
@@ -74,6 +76,7 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
     private final JTextField searchField = new JTextField();
     private final JTextField pathField = new JTextField();
     private final JButton loadButton = new JButton(new LoadClassesAction());
+    private final JButton browseButton = new JButton(new BrowseAction());
     private final JCheckBox duplicatesCheck = new JCheckBox(new ShowDuplicatesAction());
     private final JLabel resultsLabel = new JLabel();
     private final Preferences prefs = Preferences.userNodeForPackage(Classist.class);
@@ -89,8 +92,8 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
                         || name.endsWith(".par")) {
                     return true;
                 }
+                return false;
             }
-            return false;
         }
     };
 
@@ -112,6 +115,9 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         add(pathField, gbc);
         gbc.weightx = 0.0;
         gbc.gridx = 1;
+        add(browseButton, gbc);
+        gbc.weightx = 0.0;
+        gbc.gridx = 2;
         add(loadButton, gbc);
         gbc.weightx = 1.0;
         gbc.gridx = 0;
@@ -125,13 +131,14 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
         add(searchField, gbc);
         gbc.weightx = 0.0;
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         add(duplicatesCheck, gbc);
         gbc.gridx = 0;
         gbc.gridy++;
         resultsLabel.setFont(resultsLabel.getFont().deriveFont(Font.BOLD).deriveFont(16.0F));
         add(resultsLabel, gbc);
         gbc.gridx = 0;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 3;
         gbc.gridy++;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
@@ -261,15 +268,14 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
 
     private final void handleDocumentEvent(final DocumentEvent e) {
         if (e.getDocument() == searchField.getDocument()) {
-            EventQueue.invokeLater(new Runnable() {
-
-                public void run() {
-                    displayClassMatches();
-                }
-            });
+            EventQueue.invokeLater(this);
         } else if (e.getDocument() == pathField.getDocument()) {
             enableControls();
         }
+    }
+
+    public final void run() {
+        displayClassMatches();
     }
 
     private final void updateResults() {
@@ -336,6 +342,26 @@ final class Classist extends JFrame implements ListSelectionListener, DocumentLi
                 displayDuplicateClasses();
             } else {
                 displayClassMatches();
+            }
+        }
+    }
+
+    private final class BrowseAction extends AbstractAction {
+
+        private static final long serialVersionUID = 1L;
+        private final JFileChooser fileChooser = new JFileChooser();
+
+        public BrowseAction() {
+            super("Browse");
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        }
+
+        public final void actionPerformed(final ActionEvent arg0) {
+            if (pathField.getDocument().getLength() > 0) {
+                fileChooser.setCurrentDirectory(new File(pathField.getText()));
+            }
+            if (fileChooser.showOpenDialog(Classist.this) == JFileChooser.APPROVE_OPTION) {
+                pathField.setText(fileChooser.getSelectedFile().getAbsolutePath());
             }
         }
     }

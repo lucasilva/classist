@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="Classist">
 
-	<property name="classist.jar" value="classist-0.2.jar" />
+	<property name="classist.jar" value="classist-0.3.jar" />
 
 	<target name="clean">
 		<delete dir="bin" />
